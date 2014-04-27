@@ -20,7 +20,9 @@ function [noRobotCount,dataStore]=readStoreSensorData(CreatePort,SonarPort,Beaco
 %
 % 
 %   Cornell University
-%   MAE 5180: Autonomous Mobile Robots
+%   MAE 4180: Autonomous Mobile Robots
+%   Final Competition
+%   Pu, Kenneth (kp295)
 
 % If optional input 'BeaconMode' was not provided.  Assign default value
 if nargin<7, BeaconMode = 1; end
@@ -51,19 +53,6 @@ if nargin<7, BeaconMode = 1; end
         disp('Error retrieving or saving odometry data.');
     end
     
-%     % read lidar data
-%     try
-%         if isa(CreatePort,'CreateRobot')
-%             % Read lidar data from Simulator
-%             lidarScan = LidarSensorCreate(CreatePort);
-%             dataStore.lidar = [dataStore.lidar ; toc lidarScan];
-%         else
-%             % Lidar data is not available from the iRobot Create
-%         end
-%     catch
-%         disp('Error retrieving or saving lidar data.');
-%     end
-    
     % read bump data
     try
         [BumpRight BumpLeft DropRight DropLeft DropCaster BumpFront] = ...
@@ -77,17 +66,17 @@ if nargin<7, BeaconMode = 1; end
     % read sonar data
     try
         if isa(SonarPort,'CreateRobot')
-            Read sonar data from Simulator
+            % Read sonar data from Simulator
             sonarR = ReadSonar(SonarPort,1);
             sonarF = ReadSonar(SonarPort,2);
             sonarL = ReadSonar(SonarPort,3);
             
-            Check for empty returns (out of range readings)
+            % Check for empty returns (out of range readings)
             if isempty(sonarR), sonarR = NaN; end
             if isempty(sonarF), sonarF = NaN; end
             if isempty(sonarL), sonarL = NaN; end
         else
-            Read sonar data from the iRobot Create
+            % Read sonar data from the iRobot Create
             sonar = ReadSonar(SonarPort,[1,2,3]);
             sonarR = sonar(1); sonarF = sonar(2); sonarL = sonar(3);
         end

@@ -262,17 +262,11 @@ function ids = getNeighbors(n,V,E)
         % endpoint as a neighbor
         if (all(v1==n))
             [~,idx] = ismember(v2,V,'rows');
-            if idx == 0
-                pause;
-            end
             ids = [ids;idx];
         % If target node corresponds to second endpoint, save first
         % endpoint as a neighbor
         elseif (all(v2==n))
             [~,idx] = ismember(v1,V,'rows');
-            if idx == 0
-                pause;
-            end
             ids = [ids;idx];
         end 
     end
