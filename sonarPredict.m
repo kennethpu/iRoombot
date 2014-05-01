@@ -1,4 +1,4 @@
-function[ranges] = sonarPredict(robotPose,map,robotRad,angles,maxRange)
+function[ranges] = sonarPredict(robotPose,map,optWalls,robotRad,angles,maxRange)
 % SONARPREDICT: predict the sonar range measurements for a robot operating
 % in a known map.
 % 
@@ -52,10 +52,6 @@ ranges = ones(size(angles)).*maxRange;
 % the distance to the closest wall or NaN if there is no wall within
 % maxRange of the sensor
 for sensor = 1:size(angles',1)
-    % Initialize minimum distance and collided wall variables
-    min_dist = intmax;
-    min_wall = NaN;
-    
     % Determine endpoints for a line of length maxRange extending from the
     % robot in the same orientation as the sensor
     sens_x1 = rob_x+robotRad*cos(rob_theta+angles(sensor));
@@ -69,12 +65,11 @@ for sensor = 1:size(angles',1)
     % Iterate throuch each wall, chcking for collisions between previously
     % created sensor line and each wall. An intersection means that there
     % will be a response from the sonar
-    for wall = 1:size(map,1)
+    for i = 1:size(map,1)
         % Check for collision between wall and sensor line
-        [isect,x,y,ua] = intersectPoint(sens_x1,sens_y1,sens_x2,sens_y2,map(wall,1),map(wall,2),map(wall,3),map(wall,4));
+        [isect,x,y,ua] = intersectPoint(sens_x1,sens_y1,sens_x2,sens_y2,map(i,1),map(i,2),map(i,3),map(i,4));
         
-        % If an intersection is detected update minimum distance and
-        % collided wall variables
+        % If an intersection is detected update range measurements
         if(isect)
             % REMOVE: Plot intersection point if enabled
 %             plot(x,y,'ro');
@@ -87,6 +82,45 @@ for sensor = 1:size(angles',1)
             end
         end
     end
+    
+    % Initialize minimum distance and collided wall variables
+    optRanges = [];
+    
+    % Iterate throuch each optional wall, chcking for collisions between 
+    % previously created sensor line and each wall. An intersection means 
+    % that there MAY be a response from the sonar
+    for i = 1:size(optWalls,1)
+        % Check for collision between optional wall and sensor line
+        [isect,x,y,ua] = intersectPoint(sens_x1,sens_y1,sens_x2,sens_y2,optWalls(i,1),optWalls(i,2),optWalls(i,3),optWalls(i,4));
+        
+        % If an intersection is detected update range measurements
+        if(isect)
+            % REMOVE: Plot intersection point if enabled
+%             plot(x,y,'bo');
+            
+            % If intersection point is closer than previous minimum
+            % distance, store distance in array
+            distance = ua*maxRange;
+            if (distance < ranges(sensor))
+                optRanges = [optRanges;distance];
+            end
+        end
+    end
+    
+    % If optional walls are closer to robot than known wall, sum their
+    % weighted potential contributions and average the result
+    if ~isempty(optRanges)
+        optRanges = sortrows(optRanges);
+        n = size(optRanges,1);
+        for i=1:n
+            ranges(sensor) = (ranges(sensor))+(2^(n-i))*optRanges(i);
+        end
+        ranges(sensor) = ranges(sensor)/(2^n);
+    end
+    
+    % REMOVE: Plot predicted range measurement
+%     plot(rob_x+ranges(sensor)*cos(rob_theta+angles(sensor)),rob_y+ranges(sensor)*sin(rob_theta+angles(sensor)),'rs')
+        
 end
 
 end
