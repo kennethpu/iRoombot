@@ -14,7 +14,7 @@ function[xyR] = global2robot(pose,xyG)
 % 
 %   Cornell University
 %   MAE 4180/5180: Autonomous Mobile Robots
-%   Homework #1
+%   Final Competition
 %   Pu, Kenneth (kp295)
 
 % Extract x, y, and theta variables from pose

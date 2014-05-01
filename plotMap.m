@@ -64,11 +64,12 @@ for i=1:size(beaconLoc,1)
 end
 
 % Plot waypoints
-for i=1:size(waypoints,1)
-    plot(waypoints(i,1),waypoints(i,2),'gs','LineWidth',2);
+if ~isempty(waypoints)
+    plot(waypoints(:,1),waypoints(:,2),'gs','LineWidth',2);
 end
 
 % Plot extra credit waypoints
-for i=1:size(ECwaypoints,1)
-    plot(ECwaypoints(i,1),ECwaypoints(i,2),'gp','LineWidth',2);
+if ~isempty(ECwaypoints)
+    plot(ECwaypoints(:,1),ECwaypoints(:,2),'gp','LineWidth',2);
+end
 end

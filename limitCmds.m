@@ -17,8 +17,8 @@ function[cmdV,cmdW] = limitCmds(fwdVel,angVel,maxV,robotRad)
 %       cmdW        scaled angular velocity command (rad/s)
 %  
 %   Cornell University
-%   MAE 4180/5180 CS 3758: Autonomous Mobile Robots
-%   Homework #6
+%   MAE 4180: Autonomous Mobile Robots
+%   Final Competition
 %   Pu, Kenneth (kp295) 
 
 % Calculate Right and Left wheel velocities

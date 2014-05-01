@@ -38,7 +38,8 @@ for i=1:size(V,1)
     v = V(i,:);
     if (edgeIsFree([start,v],map,radius))
         E = [E;start,v];
-        plot([start(1),v(1)],[start(2),v(2)],'b');
+        % REMOVE:
+%         plot([start(1),v(1)],[start(2),v(2)],'b');
     end
 end
 

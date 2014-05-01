@@ -61,8 +61,7 @@ for i=1:size(V)
         Vret = [Vret;V(i,:)];
     else
         Vrem = [Vrem;V(i,:)];
-    end
-    
+    end   
 end
 
 % Only add edges that are still free to Eret
@@ -71,14 +70,5 @@ for i=1:size(E)
         Eret = [Eret;E(i,:)];
     end
 end
-
-% plotMap(mapret,optWallsret,beaconLoc,waypoints,ECwaypoints)
-% for i=1:size(Vret,1)
-%     plot(Vret(i,1),Vret(i,2),'bo');
-% end
-% 
-% for i=1:size(Eret,1)
-%     plot([Eret(i,1),Eret(i,3)],[Eret(i,2),Eret(i,4)],'b');
-% end
 
 end

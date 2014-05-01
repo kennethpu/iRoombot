@@ -67,6 +67,7 @@ S = deterministicDist(map,seed,radius,xRange,yRange);
 for i=1:size(S,1)
     Vset{sumidx+i} = S(i,:);
     Eset{sumidx+i} = [];
+    % REMOVE:
     plot(S(i,1),S(i,2),'bo');
 end
 
@@ -100,7 +101,8 @@ else
                 Vset{t} = [Vset{t};q_new];
                 Eset{t} = [Eset{t};q_near,q_new];
 
-                % Plot q_new and edge (q_near,q_new) 
+                
+                % REMOVE: Plot q_new and edge (q_near,q_new) 
                 plot(q_new(1),q_new(2),'bo');
                 plot([q_near(1),q_new(1)],[q_near(2),q_new(2)],'b');
                 
@@ -114,6 +116,7 @@ else
                     E = Eset{idx};
                     break;
                 end
+                % REMOVE:
                 pause(0.02);
             end
         end
@@ -247,8 +250,9 @@ function [Vret,Eret,done] = tryConnectTrees(Vset,Eset,map,radius,wpts)
                         edge = [Vset{a}(i,:),Vset{b}(j,:)];
                         if (edgeIsFree(edge,map,radius))
                             % If a valid edge exists, merge tree A and tree B
-                            plot([edge(1),edge(3)],[edge(2),edge(4)],'b');
                             [Vset,Eset,keep,done] = mergeTrees(Vset,Eset,a,b,edge,wpts);
+                            % REMOVE:
+                            plot([edge(1),edge(3)],[edge(2),edge(4)],'b');
                             
                             % Attempt to connect all nodes of the new tree
                             for va=1:size(Vset{keep},1)
@@ -257,6 +261,7 @@ function [Vret,Eret,done] = tryConnectTrees(Vset,Eset,map,radius,wpts)
                                         edge = [Vset{keep}(va,:),Vset{keep}(vb,:);];
                                         if (~ismember(edge,Eset{keep},'rows') && edgeIsFree(edge,map,radius))
                                             Eset{keep} = [Eset{keep};edge];
+                                            % REMOVE:
                                             plot([edge(1),edge(3)],[edge(2),edge(4)],'b');
                                         end
                                     end
@@ -323,7 +328,6 @@ function V = deterministicDist(map,n,radius,xRange,yRange)
         for i=0:(numStep-1)
             pt = [x_min+(i+0.5)*x_step,y_min+(j+0.5)*y_step];
             if (ptIsFree(pt,map,radius,xRange,yRange))
-                plot(pt(1),pt(2),'bo');
                 V = [V;pt];
             end
         end

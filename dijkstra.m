@@ -107,7 +107,7 @@ goal = goal_costs(1,1:2);
 %==============================================================================
 % Start from goal point
 u = goal;
-plot(u(1),u(2),'go','LineWidth',2);
+% plot(u(1),u(2),'go','LineWidth',2);
 
 % Add goal point to path
 path = u;
@@ -117,8 +117,8 @@ path = u;
 while getPrev(u,V,V_prev)
     prev_idx = getPrev(u,V,V_prev);
     u = V(prev_idx,:);
-    plot(u(1),u(2),'go','LineWidth',2);
-    plot([u(1),path(1,1)],[u(2),path(1,2)],'g','LineWidth',2);
+%     plot(u(1),u(2),'go','LineWidth',2);
+%     plot([u(1),path(1,1)],[u(2),path(1,2)],'g','LineWidth',2);
     path = [u;path];
 end
 end
