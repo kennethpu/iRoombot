@@ -1,4 +1,4 @@
-function [beacons] = beaconPredict(robotPose,map,beaconLoc,robotRad,angRange,depthRange)
+function [beacons] = beaconPredict(robotPose,map,optWalls,robotRad,beaconLoc,angRange,depthRange)
 % BEACONPREDICT: predict the beacon position measurements for a robot operating
 % in a known map. Beacon positions will be relative to the robot
 % 
@@ -25,8 +25,6 @@ function [beacons] = beaconPredict(robotPose,map,beaconLoc,robotRad,angRange,dep
 %   MAE 4180: Autonomous Mobile Robots
 %   Final Competition
 %   Pu, Kenneth (kp295)
-
-% TODO: ADD OPTWALLS
 
 %% ============================================================================
 % INITIALIZE VARIABLES
@@ -63,9 +61,14 @@ for i=1:size(beaconLoc,1)
         % REMOVE: Plot candidate beacons
 %         plot(beacon(2),beacon(3),'rs')
         if (segIsFree([c_pos,beacon(2:3)],map))
-            % Add beacon to output array
-%             beacons = [beacons; beacon(1),global2robot([c_pos,rob_theta],beacon(2:3))];
-            beacons = [beacons; beacon(1),global2robot(robotPose,beacon(2:3))];
+            if (segIsFree([c_pos,beacon(2:3)],optWalls))
+                % Add beacon to output array
+                beacons = [beacons; beacon(1),global2robot(robotPose,beacon(2:3))];
+            else
+                % Add beacon to output array. Set tag to negative to
+                % indicate beacon was seen through optional wall
+                beacons = [beacons; -beacon(1),global2robot(robotPose,beacon(2:3))];
+            end
             % REMOVE: Plot valid line of sight to beacons
 %             plot([c_pos(1),beacon(2)],[c_pos(2),beacon(3)],'r')
         end

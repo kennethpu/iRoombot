@@ -148,7 +148,7 @@ tic
 % LOCALIZATION LOOP
 %---------------------------------------------------------------
 % Turn in place for a short while to allow robot to localize
-while toc < 2.5
+while toc < 3
     % Read and store sensor data
     [dataStore]=readStoreSensorData(CreatePort,SonarPort,BeaconPort,dataStore);
     
@@ -156,12 +156,12 @@ while toc < 2.5
     Pset_i = cell2mat(dataStore.particles(end,2));
     d = dataStore.odometry(end,2);
     phi = dataStore.odometry(end,3);
-    
-%     z = cell2mat(dataStore.beacon(end,2))
-    z = dataStore.sonar(end,2:end);
+	zb = cell2mat(dataStore.beacon(end,2))
+    zs = dataStore.sonar(end,2:end);
     g_fun = @(pose)integrateOdom(pose,d,phi);
-    h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-    Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+    hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+    hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+    Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
     dataStore.particles = [dataStore.particles; {toc Pset_f}];
     
     % REMOVE: Plot updated particle set
@@ -184,7 +184,7 @@ robTH = [sum(Pset_f(:,3))/size(Pset_f,1)];
 dataStore.robotPose = [dataStore.robotPose;toc,robXY,robTH];
 
 % Initialize new smaller particle set at robot position (2*N particles)
-p_init = mvnrnd(repmat([robXY,robTH,1/(N*2)],2*N,1),diag([.01,.01,.01,0]))
+p_init = mvnrnd(repmat([robXY,robTH,1/(N*2)],2*N,1),diag([.01,.01,.01,0]));
 dataStore.particles = [dataStore.particles; {toc,p_init}];
 
 %---------------------------------------------------------------
@@ -221,12 +221,14 @@ while (toc < maxTime)
       
         % Update particle set
         Pset_i = cell2mat(dataStore.particles(end,2));
-        z = dataStore.sonar(end,2:end);
         d = dataStore.odometry(end,2);
         phi = dataStore.odometry(end,3);
+        zb = cell2mat(dataStore.beacon(end,2))
+        zs = dataStore.sonar(end,2:end);
         g_fun = @(pose)integrateOdom(pose,d,phi);
-        h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-        Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+        hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+        hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+        Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
         dataStore.particles = [dataStore.particles; {toc Pset_f}];
         
         % REMOVE: Plot updated particle set
@@ -283,12 +285,14 @@ while (toc < maxTime)
 
             % Update particle set
             Pset_i = cell2mat(dataStore.particles(end,2));
-            z = dataStore.sonar(end,2:end);
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
+            zb = cell2mat(dataStore.beacon(end,2))
+            zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-            Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+            hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+            hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+            Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Update robot trajectory plot 
@@ -326,12 +330,14 @@ while (toc < maxTime)
 
             % Update particle set
             Pset_i = cell2mat(dataStore.particles(end,2));
-            z = dataStore.sonar(end,2:end);
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
+            zb = cell2mat(dataStore.beacon(end,2))
+            zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-            Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+            hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+            hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+            Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
@@ -351,12 +357,14 @@ while (toc < maxTime)
 
             % Update particle set
             Pset_i = cell2mat(dataStore.particles(end,2));
-            z = dataStore.sonar(end,2:end);
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
+            zb = cell2mat(dataStore.beacon(end,2))
+            zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-            Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+            hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+            hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+            Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
@@ -394,12 +402,14 @@ while (toc < maxTime)
 
             % Update particle set
             Pset_i = cell2mat(dataStore.particles(end,2));
-            z = dataStore.sonar(end,2:end);
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
+            zb = cell2mat(dataStore.beacon(end,2))
+            zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-            Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+            hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+            hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+            Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
@@ -419,14 +429,16 @@ while (toc < maxTime)
 
             % Update particle set
             Pset_i = cell2mat(dataStore.particles(end,2));
-            z = dataStore.sonar(end,2:end);
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
+            zb = cell2mat(dataStore.beacon(end,2))
+            zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
-            Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
+            hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
+            hb_fun = @(pose,map)beaconPredict(pose,map,optWalls,robotRad,beaconLoc,angRangeC,maxDepth);
+            Pset_f = particleFilter(Pset_i,map,robotRad,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
-
+    
             % REMOVE: Plot updated particle set
             psetp = Pset_f(Pset_f(:,4)>0,:);
             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));

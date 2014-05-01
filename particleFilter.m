@@ -1,4 +1,4 @@
-function [Pset_f] = particleFilter(Pset_i,map,radius,z,g_fun,h_fun,R,Q)
+function [Pset_f] = particleFilter(Pset_i,map,radius,zs,zb,g_fun,hs_fun,hb_fun,R,Qs,Qb)
 % PARTICLEFILTER: generic particle filter to perform one round of sampling
 % and resampling to output a new set of particles
 % 
@@ -10,13 +10,17 @@ function [Pset_f] = particleFilter(Pset_i,map,radius,z,g_fun,h_fun,R,Q)
 %       map         M-by-4 matrix containing the coordinates of walls in 
 %                   the environment: [x1, y1, x2, y2]
 %       radius      radius of robot
-%       z           sensor measurement for localization
+%       zs          sonar sensor measurement for localization
+%       zb          beacon sensor measurement for localization
 %       g_fun       function handle to estimate predicted pose given
 %                   initial pose and control, g(u_t, mu_(t-1)) 
-%       h_fun       function handle to estimate predicted sensor
+%       hs_fun      function handle to estimate predicted sonar sensor
+%                   measurement given a predicted pose and map, hs(mu_p, map)
+%       hb_fun      function handle to estimate predicted beacon sensor
 %                   measurement given a predicted pose and map, h(mu_p, map)
 %       R           process noise covariance matrix
-%       Q           measurement noise covariance matrix
+%       Qs          sonar measurement noise covariance matrix
+%       Qb          beacon measurement noise covariance matrix
 % 
 %   OUTPUTS
 %       Pset_f      final set of particles [Nx3]
@@ -55,30 +59,110 @@ for p = 1:N
     if (ptIsFree(Pset_t(p,1:2),map,radius,xRange,yRange))
         % if in map, weight is probability of getting measurement
         
-        % Get predicted measurement value
-        h = feval(h_fun,Pset_t(p,:)',map);
+        % Reset h,z,and Q vectors
+        hu = [];
+        zu = [];
+        Qu = [];
         
+        % Get predicted beacon measurement values
+        hb = feval(hb_fun,Pset_t(p,:)',map);
+        % Attempt to use only high confidence measurements
+        % If a beacon is seen in zb and not in hb add the beacon to hb with
+        % purposefully exaggerated distances 
+        for i=1:size(zb,1)
+            zu = [zu,zb(i,2:3)];
+            if ~isempty(hb)
+                [mem,idx] = ismember(zb(i,1),hb(:,1));
+                if (mem)
+                    hu = [hu,hb(idx,2:3)];
+                    Qu = [Qu,Qb];
+                else
+                    [mem,idx] = ismember(-zb(i,1),hb(:,1)); 
+                    if (mem)
+                        hu = [hu,hb(idx,2:3)];
+                        Qu = [Qu,Qb.*3];
+                    else
+                        hu = [hu,99,99];
+                        Qu = [Qu,Qb];
+                    end
+                end
+            else
+                hu = [hu,99,99];
+                Qu = [Qu,Qb];          
+            end
+            
+        end
+        
+        % If a beacon is in 
+        if ~isempty(hb)
+            for i=find(hb(:,1)>0)'
+                if ~isempty(zb)
+                    [mem,idx] = ismember(hb(i,1),zb(:,1));
+                    if (~mem)
+                        hu = [hu,hb(i,2:3)];
+                        zu = [zu,99,99];
+                        Qu = [Qu,Qb];
+                    end
+                else
+                    hu = [hu,hb(i,2:3)];
+                    zu = [zu,99,99];
+                    Qu = [Qu,Qb];
+                end
+            end
+        end
+        
+        % Get predicted sonar measurement values
+        hs = feval(hs_fun,Pset_t(p,:)',map);
         % Attempt to use only high confidence measurements
         % (no NaNs, predicted measurements do not go through optional walls)
-        z_ind = find(~isnan(z)&h>0);
+        z_ind = find(~isnan(zs)&hs>0);
         if ~isempty(z_ind)
-            zu = z(z_ind);
-            Qu = Q(z_ind);
-            hu = h(z_ind);
-            P_w(p) = mvnpdf(zu,hu,diag(Qu));
-        elseif ~isempty(find(~isnan(z), 1))
+            zu = [zu,zs(z_ind)];
+            Qu = [Qu,Qs(z_ind)];
+            hu = [hu,hs(z_ind)];
+        elseif isempty(zu) && ~isempty(find(~isnan(zs), 1))
             % Otherwise if sonar measurements are valid attempt to use
             % predicted measurements with increased measurement noise
-            z_ind = find(~isnan(z));
-            zu = z(z_ind);
-            Qu = Q(z_ind).*3;
-            hu = abs(h(z_ind));
-            P_w(p) = mvnpdf(zu,hu,diag(Qu));
-        else
-            % If we get here all sonar measurements were invalid
-            % (sketchy...) set weight to 0. (HOPEFULLY RARE)
-            P_w(p) = 0;           
+            z_ind = find(~isnan(zs));
+            zu = zs(z_ind);
+            Qu = Qs(z_ind).*3;
+            hu = abs(hs(z_ind));  
         end
+            
+%         zu
+%         hu
+%         Qu
+        if isempty(zu)
+            % If we get here all measurements were invalid
+            % (sketchy...) set weight to 0. (HOPEFULLY RARE)
+            P_w(p) = 0;  
+        else
+            P_w(p) = mvnpdf(zu,hu,diag(Qu));   
+        end
+        
+%         % Get predicted sonar measurement values
+%         hs = feval(hs_fun,Pset_t(p,:)',map);
+%         % Attempt to use only high confidence measurements
+%         % (no NaNs, predicted measurements do not go through optional walls)
+%         z_ind = find(~isnan(zs)&hs>0);
+%         if ~isempty(z_ind)
+%             zu = zs(z_ind);
+%             Qu = Qs(z_ind);
+%             hu = hs(z_ind);
+%             P_w(p) = mvnpdf(zu,hu,diag(Qu));
+%         elseif ~isempty(find(~isnan(zs), 1))
+%             % Otherwise if sonar measurements are valid attempt to use
+%             % predicted measurements with increased measurement noise
+%             z_ind = find(~isnan(z));
+%             zu = zs(z_ind);
+%             Qu = Qs(z_ind).*3;
+%             hu = abs(hs(z_ind));
+%             P_w(p) = mvnpdf(zu,hu,diag(Qu));
+%         else
+%             % If we get here all sonar measurements were invalid
+%             % (sketchy...) set weight to 0. (HOPEFULLY RARE)
+%             P_w(p) = 0;           
+%         end
     else
         % otherwise weight = 0
         P_w(p) = 0;
@@ -143,7 +227,7 @@ function pset_f = resampleStratified(pset_t,weights)
     i=1;
     j=1;
     Q = cumsum(weights);
-    Q(size(weights,1)+1) = 9999; 
+    Q(size(weights,1)) = 9999; 
     while i<=N
         if T(i)<Q(j)
             pset_f(i,:) = [pset_t(j,:) 1/N];
