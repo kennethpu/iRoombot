@@ -86,7 +86,7 @@ n = 1000;       % Stopping criteria
 R = diag([.001,.001,.01]);  % Process Noise
 Qs = [.01,.01,.01];        % Sonar Measurement Noise
 Qb = [.001,.001];         % Beacon Measurement Noise
-N = 20;                     % Number of particles (per waypoint)
+N = 15;                     % Number of particles (per waypoint)
 
 % Initialize control function flags
 fail = 0;         % Flag indicating whether goal was found
@@ -96,8 +96,8 @@ fail = 0;         % Flag indicating whether goal was found
 %==============================================================================
 % Load .mat file
 % Exmap = load('ExampleMap1_2014.mat');
-% Exmap = load('ExampleMap2_2014.mat');
-Exmap = load('ExampleMap3_2014.mat');
+Exmap = load('ExampleMap2_2014.mat');
+% Exmap = load('ExampleMap3_2014.mat');
 
 % Load map parameters from .mat file
 map = Exmap.map;                    % Known walls in environment [Nx4]
@@ -156,7 +156,7 @@ while toc < 3
     Pset_i = cell2mat(dataStore.particles(end,2));
     d = dataStore.odometry(end,2);
     phi = dataStore.odometry(end,3);
-	zb = cell2mat(dataStore.beacon(end,2))
+	zb = cell2mat(dataStore.beacon(end,2));
     zs = dataStore.sonar(end,2:end);
     g_fun = @(pose)integrateOdom(pose,d,phi);
     hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -223,7 +223,7 @@ while (toc < maxTime)
         Pset_i = cell2mat(dataStore.particles(end,2));
         d = dataStore.odometry(end,2);
         phi = dataStore.odometry(end,3);
-        zb = cell2mat(dataStore.beacon(end,2))
+        zb = cell2mat(dataStore.beacon(end,2));
         zs = dataStore.sonar(end,2:end);
         g_fun = @(pose)integrateOdom(pose,d,phi);
         hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -287,7 +287,7 @@ while (toc < maxTime)
             Pset_i = cell2mat(dataStore.particles(end,2));
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
-            zb = cell2mat(dataStore.beacon(end,2))
+            zb = cell2mat(dataStore.beacon(end,2));
             zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
             hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -332,7 +332,7 @@ while (toc < maxTime)
             Pset_i = cell2mat(dataStore.particles(end,2));
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
-            zb = cell2mat(dataStore.beacon(end,2))
+            zb = cell2mat(dataStore.beacon(end,2));
             zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
             hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -359,7 +359,7 @@ while (toc < maxTime)
             Pset_i = cell2mat(dataStore.particles(end,2));
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
-            zb = cell2mat(dataStore.beacon(end,2))
+            zb = cell2mat(dataStore.beacon(end,2));
             zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
             hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -404,7 +404,7 @@ while (toc < maxTime)
             Pset_i = cell2mat(dataStore.particles(end,2));
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
-            zb = cell2mat(dataStore.beacon(end,2))
+            zb = cell2mat(dataStore.beacon(end,2));
             zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
             hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
@@ -431,7 +431,7 @@ while (toc < maxTime)
             Pset_i = cell2mat(dataStore.particles(end,2));
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
-            zb = cell2mat(dataStore.beacon(end,2))
+            zb = cell2mat(dataStore.beacon(end,2));
             zs = dataStore.sonar(end,2:end);
             g_fun = @(pose)integrateOdom(pose,d,phi);
             hs_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
