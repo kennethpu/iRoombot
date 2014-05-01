@@ -143,6 +143,7 @@ function pset_f = resampleStratified(pset_t,weights)
     i=1;
     j=1;
     Q = cumsum(weights);
+    Q(size(weights,1)+1) = 9999; 
     while i<=N
         if T(i)<Q(j)
             pset_f(i,:) = [pset_t(j,:) 1/N];

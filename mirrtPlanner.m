@@ -23,7 +23,6 @@ function[dataStore] = mirrtPlanner(CreatePort,SonarPort,BeaconPort,tagNum,maxTim
 %   Final Competition
 %   Pu, Kenneth (kp295) 
 
-% git s:
 fprintf('Starting...\n');
 
 %% ============================================================================
@@ -84,23 +83,21 @@ seed = 81; %169;     % Number of seed nodes to sample
 n = 1000;       % Stopping criteria
 
 % Initialize localization parameters
-R = [.001,    0, 0;
-        0, .001, 0;
-        0,    0, .01];   % Process Noise
-Qs = 0.01 * eye(3);      % Sonar Measurement Noise
-Qb = 0.0001 * eye(3);    % Beacon Measurement Noise
-N = 15;                  % Number of particles (per waypoint)
+R = diag([.001,.001,.01]);  % Process Noise
+Qs = [.01,.01,.01];        % Sonar Measurement Noise
+Qb = [.001,.001];         % Beacon Measurement Noise
+N = 20;                     % Number of particles (per waypoint)
 
 % Initialize control function flags
-fail = 0;       % Flag indicating whether goal was found
+fail = 0;         % Flag indicating whether goal was found
 
 %% ============================================================================
 % LOAD MAP PARAMETERS
 %==============================================================================
 % Load .mat file
-Exmap = load('ExampleMap1_2014.mat');
+% Exmap = load('ExampleMap1_2014.mat');
 % Exmap = load('ExampleMap2_2014.mat');
-% Exmap = load('ExampleMap3_2014.mat');
+Exmap = load('ExampleMap3_2014.mat');
 
 % Load map parameters from .mat file
 map = Exmap.map;                    % Known walls in environment [Nx4]
@@ -112,6 +109,9 @@ beaconLoc = Exmap.beaconLoc;        % tag and x/y positions of beacons [Lx3]
 %% ============================================================================
 % ADDITIONAL PRE-PROCESSING STEPS
 %==============================================================================
+% Save map
+dataStore.finalMap = map;
+
 % REMOVE: Plot map
 plotMap(map,optWalls,beaconLoc,waypoints,ECwaypoints);
 
@@ -160,20 +160,13 @@ while toc < 2.5
 %     z = cell2mat(dataStore.beacon(end,2))
     z = dataStore.sonar(end,2:end);
     g_fun = @(pose)integrateOdom(pose,d,phi);
-    h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+    h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
     Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
     dataStore.particles = [dataStore.particles; {toc Pset_f}];
     
     % REMOVE: Plot updated particle set
-%     psetp = Pset_f(Pset_f(:,4)>0,:);
-%     set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
-    
-%     for p = 1:size(p_init,1)
-%         x = Pset_f(p,1);
-%         y = Pset_f(p,2);
-%         theta = Pset_f(p,3);
-%         plot([x x+.3*cos(theta)],[y y+.3*sin(theta)],'r');
-%     end
+    psetp = Pset_f(Pset_f(:,4)>0,:);
+    set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
     
     [cmdV,cmdW] = limitCmds(0,-1,maxV,wheelRad);
     SetFwdVelAngVelCreate(CreatePort,cmdV,cmdW);
@@ -190,6 +183,10 @@ robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
 robTH = [sum(Pset_f(:,3))/size(Pset_f,1)];
 dataStore.robotPose = [dataStore.robotPose;toc,robXY,robTH];
 
+% Initialize new smaller particle set at robot position (2*N particles)
+p_init = mvnrnd(repmat([robXY,robTH,1/(N*2)],2*N,1),diag([.01,.01,.01,0]))
+dataStore.particles = [dataStore.particles; {toc,p_init}];
+
 %---------------------------------------------------------------
 % FIND PATH FROM INITIAL POSITION TO CLOSEST GOAL
 %---------------------------------------------------------------
@@ -198,6 +195,9 @@ gotopt = 1;         % Index for current waypoint
 set(wpts_p,'XData',path(:,1),'YData',path(:,2));
 set(path_p,'XData',path(:,1),'YData',path(:,2));
 set(goal_p,'XData',goal(1),'YData',goal(2));
+
+% Check if path to first waypoint crosses an optional wall
+[crosses,crossWall] = crossesOptWall([robXY,path(gotopt,:)],optWalls);
 
 % REMOVE:
 fprintf('New goal point [%f,%f]\n',goal(1),goal(2));
@@ -225,13 +225,13 @@ while (toc < maxTime)
         d = dataStore.odometry(end,2);
         phi = dataStore.odometry(end,3);
         g_fun = @(pose)integrateOdom(pose,d,phi);
-        h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+        h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
         Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
         dataStore.particles = [dataStore.particles; {toc Pset_f}];
         
         % REMOVE: Plot updated particle set
-%         psetp = Pset_f(Pset_f(:,4)>0,:);
-%         set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+        psetp = Pset_f(Pset_f(:,4)>0,:);
+        set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
         
         % Estimate current robot pose using simple average of particles
         robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -269,6 +269,8 @@ while (toc < maxTime)
         %---------------------------------------------------------------
         % Front bump sensor triggered
         if dataStore.bump(end,3)
+            % Set crosses flag to 0
+            crosses = 0;
             % Determine bump location
             bumpPt = [robXY(1)+cos(robTH+bumpAngles(2))*robotRad,robXY(2)+sin(robTH+bumpAngles(2))*robotRad];
             % Check if bump location corresponds to an optional wall
@@ -285,13 +287,13 @@ while (toc < maxTime)
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
             Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Update robot trajectory plot 
-%             psetp = Pset_f(Pset_f(:,4)>0,:);
-%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+            psetp = Pset_f(Pset_f(:,4)>0,:);
+            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -310,6 +312,8 @@ while (toc < maxTime)
             
         % Right bump sensor triggered
         elseif dataStore.bump(end,2)
+            % Set crosses flag to 0
+            crosses = 0;
             % Determine bump location
             bumpPt = [robXY(1)+cos(robTH+bumpAngles(1))*robotRad,robXY(2)+sin(robTH+bumpAngles(1))*robotRad];
             % Check if bump location corresponds to an optional wall
@@ -326,13 +330,13 @@ while (toc < maxTime)
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
             Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-%             psetp = Pset_f(Pset_f(:,4)>0,:);
-%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+            psetp = Pset_f(Pset_f(:,4)>0,:);
+            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -351,13 +355,13 @@ while (toc < maxTime)
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
             Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-%             psetp = Pset_f(Pset_f(:,4)>0,:);
-%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+            psetp = Pset_f(Pset_f(:,4)>0,:);
+            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -376,6 +380,8 @@ while (toc < maxTime)
             
         % Left bump sensor triggered
         elseif dataStore.bump(end,4)
+            % Set crosses flag to 0
+            crosses = 0;
             % Determine bump location
             bumpPt = [robXY(1)+cos(robTH+bumpAngles(3))*robotRad,robXY(2)+sin(robTH+bumpAngles(3))*robotRad];
             % Check if bump location corresponds to an optional wall
@@ -392,13 +398,13 @@ while (toc < maxTime)
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
             Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-%             psetp = Pset_f(Pset_f(:,4)>0,:);
-%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+            psetp = Pset_f(Pset_f(:,4)>0,:);
+            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -417,13 +423,13 @@ while (toc < maxTime)
             d = dataStore.odometry(end,2);
             phi = dataStore.odometry(end,3);
             g_fun = @(pose)integrateOdom(pose,d,phi);
-            h_fun = @(pose,map)sonarPredict(pose,map,robotRad,sonarAngles,maxDepth);
+            h_fun = @(pose,map)sonarPredict(pose,map,optWalls,robotRad,sonarAngles,maxDepth);
             Pset_f = particleFilter(Pset_i,map,robotRad,z,g_fun,h_fun,R,Qs);
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-%             psetp = Pset_f(Pset_f(:,4)>0,:);
-%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+            psetp = Pset_f(Pset_f(:,4)>0,:);
+            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -448,8 +454,17 @@ while (toc < maxTime)
         if pdist([path(gotopt,1:2);robXY],'euclidean')<=closeEnough;
             fprintf('Robot reached waypoint [%f,%f]\n',path(gotopt,1),path(gotopt,2));
             gotopt = gotopt + 1;
+            
+            % Robot just "crossed" an optional wall, assume the wall does not
+            % actually exist
+            if (crosses)
+                plot([optWalls(crossWall,1),optWalls(crossWall,3)],[optWalls(crossWall,2),optWalls(crossWall,4)],'w','LineWidth',3)
+                optWalls(crossWall,:) = [];
+            end
+            
             % REMOVE:
             if gotopt <= size(path,1)
+                [crosses,crossWall] = crossesOptWall([path(gotopt-1,:),path(gotopt,:)],optWalls);
                 fprintf('Next waypoint [%f,%f]\n',path(gotopt,1),path(gotopt,2));
             end
         end
@@ -488,7 +503,12 @@ while (toc < maxTime)
     end
     
     % Determine path from current position to new goal
-    [path,goal,gfound] = findPath(map,V,E,robXY,waypoints,ECwaypoints,robotRad+radExt);
+    [path,goal,gfound] = findPath(map,V,E,robXY,waypoints,ECwaypoints,robotRad+radExt);    
+    gotopt = 1;         % Index for which current waypoint
+    
+    
+    % Check if path to first waypoint crosses an optional wall
+    [crosses,crossWall] = crossesOptWall([robXY,path(gotopt,:)],optWalls);
     
     % REMOVE: Update path and goal plots
     set(wpts_p,'XData',path(:,1),'YData',path(:,2));
@@ -512,13 +532,12 @@ while (toc < maxTime)
         % REMOVE:
         fprintf('New goal point [%f,%f]\n',goal(1),goal(2));
     end
-        
-    gotopt = 1;         % Index for which current waypoint
-    fail = 0;
     
     % Set LEDs to green to indicate leaving waypoint
     SetLEDsRoomba(CreatePort,1,0,100);
     
+    % Reset fail flag
+    fail = 0;
 end
 
 % REMOVE:
@@ -536,16 +555,33 @@ plotDataStore(dataStore,optWalls,beaconLoc,waypoints,ECwaypoints);
 end
 
 %% ============================================================================
-% localize
+% crossesOptWall
 %==============================================================================
-%   Helper function to get the index of the node with smallest cost in a 
-%   list of nodes
+%   Helper function to check if the current edge crosses an optional wall
 %
 %   INPUTS 
-%       Q      list of nodes to search over
-%       V      list of nodes in graph
-%       V_cost list of costs associated with V
+%       edge        1-by-4 array containing 2 x/y coordinates of points defining
+%                   a line
+%       optWalls    N-by-4 matrix containing the coordinates of optional 
+%                   walls in the environment: [x1, y1, x2, y2]
 % 
 %   OUTPUTS 
-%       nidx   index of node in Q with smallest cost
-% function
+%       crosses     boolean indicating whether an optional wall is crossed
+%       crossWall   index in optWalls of optional wall crossed by edge
+%       
+function [crosses,crossWall] = crossesOptWall(edge,optWalls)
+    % Iterate through optional walls, checking for intersections
+    % NOTE: we assume that edges will never cross more than one optional
+    % wall. It technically IS possible, but rare enough that we will
+    % discount it
+    crosses = 0;
+    crossWall = -1;
+    for i=1:size(optWalls,1)
+        [isect,~,~,~] = intersectPoint(edge(1),edge(2),edge(3),edge(4),optWalls(i,1),optWalls(i,2),optWalls(i,3),optWalls(i,4));
+        if (isect)
+            crosses = 1;
+            crossWall = i;
+            break;
+        end
+    end
+end
