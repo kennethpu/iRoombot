@@ -1,0 +1,6 @@
+ Control Function: mirrtPlanner.m
+Plotting Function: plotDataStore(<dataStore>)
+
+* Control function should automatically call plotting function upon completion. 
+If the control function is terminated prematurely (error, ran over time, etc.) 
+then plotting function can be called manually.
