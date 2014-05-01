@@ -23,7 +23,7 @@ function[dataStore] = mirrtPlanner(CreatePort,SonarPort,BeaconPort,tagNum,maxTim
 %   Final Competition
 %   Pu, Kenneth (kp295) 
 
-% REMOVE:
+% git s:
 fprintf('Starting...\n');
 
 %% ============================================================================
@@ -165,8 +165,8 @@ while toc < 2.5
     dataStore.particles = [dataStore.particles; {toc Pset_f}];
     
     % REMOVE: Plot updated particle set
-    psetp = Pset_f(Pset_f(:,4)>0,:);
-    set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%     psetp = Pset_f(Pset_f(:,4)>0,:);
+%     set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
     
 %     for p = 1:size(p_init,1)
 %         x = Pset_f(p,1);
@@ -230,8 +230,8 @@ while (toc < maxTime)
         dataStore.particles = [dataStore.particles; {toc Pset_f}];
         
         % REMOVE: Plot updated particle set
-        psetp = Pset_f(Pset_f(:,4)>0,:);
-        set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%         psetp = Pset_f(Pset_f(:,4)>0,:);
+%         set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
         
         % Estimate current robot pose using simple average of particles
         robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -290,8 +290,8 @@ while (toc < maxTime)
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Update robot trajectory plot 
-            psetp = Pset_f(Pset_f(:,4)>0,:);
-            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%             psetp = Pset_f(Pset_f(:,4)>0,:);
+%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -331,8 +331,8 @@ while (toc < maxTime)
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-            psetp = Pset_f(Pset_f(:,4)>0,:);
-            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%             psetp = Pset_f(Pset_f(:,4)>0,:);
+%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -356,8 +356,8 @@ while (toc < maxTime)
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-            psetp = Pset_f(Pset_f(:,4)>0,:);
-            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%             psetp = Pset_f(Pset_f(:,4)>0,:);
+%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -397,8 +397,8 @@ while (toc < maxTime)
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-            psetp = Pset_f(Pset_f(:,4)>0,:);
-            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%             psetp = Pset_f(Pset_f(:,4)>0,:);
+%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
@@ -422,8 +422,8 @@ while (toc < maxTime)
             dataStore.particles = [dataStore.particles; {toc Pset_f}];
 
             % REMOVE: Plot updated particle set
-            psetp = Pset_f(Pset_f(:,4)>0,:);
-            set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
+%             psetp = Pset_f(Pset_f(:,4)>0,:);
+%             set(parts_p,'XData',psetp(:,1),'YData',psetp(:,2));
             
             % Estimate current robot pose using simple average of particles
             robXY = [sum(Pset_f(:,1))/size(Pset_f,1),sum(Pset_f(:,2))/size(Pset_f,1)];
