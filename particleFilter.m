@@ -1,4 +1,4 @@
-function [Pset_f] = particleFilter(Pset_i,map,radius,z,g_fun,h_fun,R,Q,usebeacon)
+function [Pset_f] = particleFilter(Pset_i,map,radius,z,g_fun,h_fun,R,Q)
 % PARTICLEFILTER: generic particle filter to perform one round of sampling
 % and resampling to output a new set of particles
 % 
@@ -17,7 +17,6 @@ function [Pset_f] = particleFilter(Pset_i,map,radius,z,g_fun,h_fun,R,Q,usebeacon
 %                   measurement given a predicted pose and map, h(mu_p, map)
 %       R           process noise covariance matrix
 %       Q           measurement noise covariance matrix
-%       usebeacon   flag indicating if we are using beacon or sonar data
 % 
 %   OUTPUTS
 %       Pset_f      final set of particles [Nx3]
@@ -41,11 +40,6 @@ y_max = max(max(map(:,2)),max(map(:,4)));
 xRange = [x_min,x_max];
 yRange = [y_min,y_max];
 
-% Reduce size of z and Q accordingly if measurement includes NaN's
-z_ind = find(~isnan(z));
-zu = z(z_ind);
-Qu = Q(z_ind,z_ind);
-
 %==============================================================================
 % IMPORTANCE SAMPLING
 %==============================================================================
@@ -60,10 +54,31 @@ P_w = zeros(N,1);     % Initialize array to hold particle weights
 for p = 1:N
     if (ptIsFree(Pset_t(p,1:2),map,radius,xRange,yRange))
         % if in map, weight is probability of getting measurement
-        % reduce size of h accordingly if measurement includes NaN's
+        
+        % Get predicted measurement value
         h = feval(h_fun,Pset_t(p,:)',map);
-        hu = h(z_ind);
-        P_w(p) = mvnpdf(zu,hu,Qu);
+        
+        % Attempt to use only high confidence measurements
+        % (no NaNs, predicted measurements do not go through optional walls)
+        z_ind = find(~isnan(z)&h>0);
+        if ~isempty(z_ind)
+            zu = z(z_ind);
+            Qu = Q(z_ind);
+            hu = h(z_ind);
+            P_w(p) = mvnpdf(zu,hu,diag(Qu));
+        elseif ~isempty(find(~isnan(z), 1))
+            % Otherwise if sonar measurements are valid attempt to use
+            % predicted measurements with increased measurement noise
+            z_ind = find(~isnan(z));
+            zu = z(z_ind);
+            Qu = Q(z_ind).*3;
+            hu = abs(h(z_ind));
+            P_w(p) = mvnpdf(zu,hu,diag(Qu));
+        else
+            % If we get here all sonar measurements were invalid
+            % (sketchy...) set weight to 0. (HOPEFULLY RARE)
+            P_w(p) = 0;           
+        end
     else
         % otherwise weight = 0
         P_w(p) = 0;

@@ -26,8 +26,6 @@ function[ranges] = sonarPredict(robotPose,map,optWalls,robotRad,angles,maxRange)
 %   Final Competition
 %   Pu, Kenneth (kp295)
 
-% TODO: ADD OPTWALLS
-
 %% ============================================================================
 % INITIALIZE VARIABLES
 %==============================================================================
@@ -115,7 +113,9 @@ for sensor = 1:size(angles',1)
         for i=1:n
             ranges(sensor) = (ranges(sensor))+(2^(n-i))*optRanges(i);
         end
-        ranges(sensor) = ranges(sensor)/(2^n);
+        % Save sensor value as negative to indicate presence of optional
+        % wall
+        ranges(sensor) = -ranges(sensor)/(2^n);
     end
     
     % REMOVE: Plot predicted range measurement
