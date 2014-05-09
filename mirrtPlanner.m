@@ -79,14 +79,14 @@ closeEnough = 0.2;              % Minimum distance from waypoint before it count
 % Initialize roadmap parameters
 radExt = 0.04;  % How much to overestimate robot radius 
 step = 0.5;     % Step size
-seed = 81; %169;     % Number of seed nodes to sample 
+seed = 169;     % Number of seed nodes to sample 
 n = 1000;       % Stopping criteria
 
 % Initialize localization parameters
-R = diag([.001,.001,.01]);  % Process Noise
-Qs = [.01,.01,.01];        % Sonar Measurement Noise
-Qb = [.001,.001];         % Beacon Measurement Noise
-N = 15;                     % Number of particles (per waypoint)
+R = diag([.01,.01,.01]);  % Process Noise
+Qs = [.1,.1,.1];        % Sonar Measurement Noise
+Qb = [.01,.01];         % Beacon Measurement Noise
+N = 20;                     % Number of particles (per waypoint)
 
 % Initialize control function flags
 fail = 0;         % Flag indicating whether goal was found
@@ -127,7 +127,7 @@ for i = 1:size(waypoints,1)
     randT = [-pi:2*pi/(N-1):pi]';
     p_init((i-1)*N+1:i*N,:) = [randXY,randT,repmat([1/(N*size(waypoints,1))],N,1)];
 end
-dataStore.particles = [dataStore.particles; {toc,p_init}];
+dataStore.particles = [dataStore.particles; {0,p_init}];
 
 %---------------------------------------------------------------
 % REMOVE: INITIALIZE PLOT HANDLES

@@ -30,7 +30,7 @@ function [Pset_f] = particleFilter(Pset_i,map,radius,zs,zb,g_fun,hs_fun,hb_fun,R
 %   Final Competition
 %   Pu, Kenneth (kp295)
 
-%==============================================================================
+%% ============================================================================
 % INITIALIZE VARIABLES
 %==============================================================================
 % Get size of initial particle set
@@ -44,7 +44,7 @@ y_max = max(max(map(:,2)),max(map(:,4)));
 xRange = [x_min,x_max];
 yRange = [y_min,y_max];
 
-%==============================================================================
+%% ============================================================================
 % IMPORTANCE SAMPLING
 %==============================================================================
 % 1. Find updated positions of each particle given input control and process
